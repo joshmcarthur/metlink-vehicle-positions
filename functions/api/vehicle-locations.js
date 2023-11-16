@@ -8,7 +8,7 @@ addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
 
-async function onRequestGet(context) {
+export async function onRequestGet(context) {
   // Fetch the JSON content
   const response = await fetch(jsonURL, { headers: { Authorization: `Bearer ${context.env.METLINK_API_KEY}` } });
 
