@@ -4,13 +4,9 @@ const jsonURL = "https://api.opendata.metlink.org.nz/v1/gtfs-rt/vehiclepositions
 // Set cache expiration time (10 seconds)
 const cacheDuration = 10;
 
-addEventListener("fetch", (event) => {
-  event.respondWith(handleRequest(event.request));
-});
-
 export async function onRequestGet(context) {
   // Fetch the JSON content
-  const response = await fetch(jsonURL, { headers: { Authorization: `Bearer ${context.env.METLINK_API_KEY}` } });
+  const response = await fetch(jsonURL, { headers: { "x-api-key": context.env.METLINK_API_KEY } });
 
   // Create a new response with necessary headers
   const newResponse = new Response(response.body, response);
