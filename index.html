@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wellington Public Transport Live Vehicle Map</title>
+    <!-- Include Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica,
+          Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+      }
+
+      header {
+        padding: 0.5rem 1rem;
+        box-shadow: 0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px rgba(0,0,0,.3);
+      }
+
+      .map-title {
+        font-weight: 400;
+        font-size: 1.375rem;
+        margin: 0;
+      }
+
+      /* Specify a size for the map container */
+      #map {
+        flex: 1;
+        width: 100vw;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1 class="map-title">Wellington Public Transport Live Vehicle Map</h1>
+      <small class="map-subtitle">
+        This map displays real-time locations of Metlink public transport vehicles, updating every 10s.
+        This tool is for demonstration purposes only.
+      </small>
+    </header>
+    <div id="map"></div>
+
+    <!-- Include Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+      // Initialize Leaflet map
+      const myMap = L.map("map").setView([-41.1460508, 174.9527725], 10); // [latitude, longitude], zoom level
+
+      // Attribution for OpenStreetMap and GWRC with license
+      const combinedAttribution = `
+        Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors,
+        Data source: Metlink Open Data API - GWRC,
+        <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank">Creative Commons Attribution 4.0 International License</a>.
+        Created by <a href="https://joshmcarthur.com" target="_blank">Josh McArthur</a>.
+      `;
+
+      // Add tile layer for the map (you can use different map providers)
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: combinedAttribution,
+      }).addTo(myMap);
+
+      // Function to update vehicle markers
+      function updateVehicleMarkers(vehicleData, zoomTo = false) {
+        vehicleData.forEach((entity) => {
+          const {
+            id,
+            vehicle: {
+              vehicle: { id: vehicleId },
+              position: { latitude, longitude },
+            },
+          } = entity;
+
+          // Check if marker exists, if not, create a new marker
+          if (!markers[vehicleId]) {
+            markers[vehicleId] = L.marker([latitude, longitude])
+              .addTo(myMap)
+              .bindPopup(
+                `<strong>Vehicle ID:</strong> ${vehicleId}<br><strong>Vehicle Type:</strong> ${
+                  vehicleId.startsWith("4") ? "Train" : "Bus/Other"
+                }`
+              );
+          } else {
+            // If marker exists, update its position
+            markers[vehicleId].setLatLng([latitude, longitude]);
+          }
+
+          if (zoomTo) {
+            // Get marker coordinates for fitBounds
+            const markerCoordinates = Object.values(markers).map((marker) => marker.getLatLng());
+
+            // Fit the map to contain all markers
+            if (markerCoordinates.length > 0) {
+              const bounds = L.latLngBounds(markerCoordinates);
+              myMap.fitBounds(bounds);
+            }
+          }
+        });
+      }
+
+      // Function to fetch data and update markers
+      function fetchDataAndUpdateMarkers() {
+        fetch("/api/vehicle-locations")
+          .then((response) => response.json())
+          .then((data) => {
+            updateVehicleMarkers(data.entity); // Update markers with fetched data
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+          });
+      }
+
+      // Periodically update vehicle positions (fetch and update every 5 seconds)
+      setInterval(() => {
+        fetchDataAndUpdateMarkers(); // Fetch data and update markers
+      }, 5000); // Update every 5 seconds
+
+      // Data structure to hold markers
+      const markers = {};
+
+      // Initial fetch and update
+      fetchDataAndUpdateMarkers(true); // Fetch data and update markers initially
+    </script>
+  </body>
+</html>
