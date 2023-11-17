@@ -17,7 +17,15 @@
 
       header {
         padding: 0.5rem 1rem;
-        box-shadow: 0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px rgba(0,0,0,.3);
+        box-shadow: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+
+      .indicator {
+        display: inline-block;
+        height: 1ch;
+        width: 1ch;
+        border-radius: 50%;
+        background: #00364a
       }
 
       .map-title {
@@ -37,8 +45,8 @@
     <header>
       <h1 class="map-title">Wellington Public Transport Live Vehicle Map</h1>
       <small class="map-subtitle">
-        This map displays real-time locations of Metlink public transport vehicles, updating every 10s.
-        This tool is for demonstration purposes only.
+        This map displays real-time locations of Metlink public transport vehicles, updating every 10s. This tool is for
+        demonstration purposes only. Each <span class="indicator"></span> is a bus or train, click on the indicator for details.
       </small>
     </header>
     <div id="map"></div>
@@ -70,17 +78,23 @@
             vehicle: {
               vehicle: { id: vehicleId },
               position: { latitude, longitude },
+              trip: { trip_id }
             },
           } = entity;
 
           // Check if marker exists, if not, create a new marker
           if (!markers[vehicleId]) {
-            markers[vehicleId] = L.marker([latitude, longitude])
+            markers[vehicleId] = L.circle([latitude, longitude], {
+              color: "#00364a", // Set the color of the circle
+              fillColor: "#00364a", // Set the fill color of the circle
+              fillOpacity: 0.875, // Set the opacity of the fill
+              radius: 35,
+            }) // Set the radius of the circle (adjust as needed)
               .addTo(myMap)
               .bindPopup(
                 `<strong>Vehicle ID:</strong> ${vehicleId}<br><strong>Vehicle Type:</strong> ${
                   vehicleId.startsWith("4") ? "Train" : "Bus/Other"
-                }`
+                }<br><strong>Route:</strong> ${trip_id.split("__")[0]}`
               );
           } else {
             // If marker exists, update its position
@@ -102,7 +116,7 @@
 
       // Function to fetch data and update markers
       function fetchDataAndUpdateMarkers() {
-        fetch("/api/vehicle-locations")
+        fetch("https://wellington-public-transport-map.joshmcarthur.com/api/vehicle-locations")
           .then((response) => response.json())
           .then((data) => {
             updateVehicleMarkers(data.entity); // Update markers with fetched data
